@@ -16,11 +16,11 @@ def lambda_handler(event,context):
         on_session_started({'requestId': event['request']['requestId']},
                            event['session'])
     
-    if event['session']['type'] == "LaunchRequest":
+    if event['request']['type'] == "LaunchRequest":
         return on_launch(event['request'],event['session'])
-    elif event['session']['type'] == "IntentType":
+    elif event['request']['type'] == "IntentRequest":
         return on_intent(event['request'],event['session'])
-    elif event['session']['type'] == "SessionEndedRequest":
+    elif event['request']['type'] == "SessionEndedRequest":
         return on_session_ended(event['request'],event['session'])
 
 # ----- Functions that unpack specific requests
@@ -40,6 +40,9 @@ def on_intent(intent_request, session):
     parses which intent and calls the appropriate behavior
     """
 
+    print("on_intent requestId=" + intent_request['requestId']
+          + ", sessionId=" + session['sessionId'])
+    
     intent = intent_request['intent']
     intent_name = intent_request['intent']['name']
 
@@ -99,7 +102,7 @@ def handle_read_log(read_request,session):
 
     session_attributes = {}
     card_title = "Reported"
-    speech_output = "The last time you reported feeding the fish was " + convert_to_speech(timestamp)
+    speech_output = "The last time you reported feeding the fish was " + convert_to_speech(dt_timestamp)
     reprompt_text = speech_output
     should_end_session = True
     return build_response(session_attributes,
@@ -137,7 +140,7 @@ def fetch_log():
     """
     This method will read the persistent storage to find the last feeding.
     """
-    simulated_timeshift = 7200
+    simulated_timeshift = 3*7200
     return datetime.fromtimestamp(time.time() - simulated_timeshift)
 
 def convert_to_speech(dt_timestamp):
@@ -156,7 +159,7 @@ def convert_to_speech(dt_timestamp):
         return "less than 1 hour ago."
     elif (delta_time < one_day):
         hours = str(int(delta_time / one_hour))
-        return "just over " + hours + " ago."
+        return "just over " + hours + " hours ago."
     else:
         return "more than 1 day ago."
 
