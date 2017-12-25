@@ -4,8 +4,11 @@ This will record and/or read back the last time the fish were fed
 
 from __future__ import print_function
 
+import boto3
+
 import time
 from datetime import datetime
+
 
 def lambda_handler(event,context):
     """
@@ -83,7 +86,7 @@ def handle_log_timestamp(log_request,session):
 
     timestamp = log_request['timestamp']
 
-    save_timestamp(timestamp)
+    save_timestamp(session['user']['userId'])
 
     session_attributes = {}
     card_title = "Logged"
@@ -98,7 +101,7 @@ def handle_read_log(read_request,session):
     Fetch the last time the fish were fed from the log and repeat it to the user.
     """
 
-    dt_timestamp = fetch_log()
+    dt_timestamp = fetch_log(session['user']['userId'])
 
     session_attributes = {}
     card_title = "Reported"
@@ -130,18 +133,37 @@ def handle_session_end_request():
 
 # ---- Data management
 
-def save_timestamp(timestamp):
+def save_timestamp(userId):
     """
     This method will use some form of persistent storage to save requests
     """
-    pass
 
-def fetch_log():
+    sdb = boto3.client('sdb')
+    response = sdb.create_domain(DomainName='FishFeeder')
+    response = sdb.put_attributes(DomainName='FishFeeder',
+                                  ItemName=userId,
+                                  Attributes=[
+                                      {
+                                          'Name' : 'lastFedTime',
+                                          'Value' : str(time.time()),
+                                          'Replace' : True
+                                          },
+                                      ],
+                                  )
+
+def fetch_log(userId):
     """
     This method will read the persistent storage to find the last feeding.
     """
+
+    sdb = boto3.client('sdb')
+    response = sdb.create_domain(DomainName='FishFeeder')
+    response = sdb.get_attributes(DomainName='FishFeeder',
+                                  ItemName=userId)
+    lastFedTime = float(response['Attributes'][0]['Value'])
+    
     simulated_timeshift = 3*7200
-    return datetime.fromtimestamp(time.time() - simulated_timeshift)
+    return datetime.fromtimestamp(lastFedTime)
 
 def convert_to_speech(dt_timestamp):
     """
@@ -154,7 +176,8 @@ def convert_to_speech(dt_timestamp):
     current_time = datetime.fromtimestamp(time.time())
 
     delta_time = int((current_time - dt_timestamp).total_seconds())
-
+    print(delta_time)
+    
     if (delta_time < one_hour):
         return "less than 1 hour ago."
     elif (delta_time < one_day):
