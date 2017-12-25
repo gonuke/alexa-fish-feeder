@@ -1,0 +1,17 @@
+{
+    "intents": [
+        {
+            "intent": "FishFeederWriteLogIntent"
+        },
+        {
+            "intent": "FishFeederReadLogIntent"
+        },
+        {
+            "intent": "AMAZON.HelpIntent"
+        },
+        {
+            "intent": "AMAZON.StopIntent"
+        }
+    ]
+    
+}

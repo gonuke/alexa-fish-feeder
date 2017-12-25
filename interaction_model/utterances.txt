@@ -1,0 +1,2 @@
+FishFeederWriteLogIntent I fed the fish
+FishFeederReadLogIntent when the fish were fed
